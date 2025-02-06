@@ -43,7 +43,7 @@ export function Orders() {
     queryFn: async () => {
       const { data } = await supabase.auth.getUser();
       if (!data?.user) throw new Error('Not authenticated');
-      return api.mockData.getOrders();
+      return api.orders.getByUserId(data.user.id);
     },
   });
 

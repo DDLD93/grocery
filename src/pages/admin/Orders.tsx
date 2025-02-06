@@ -61,7 +61,7 @@ export function Orders() {
 
   const filteredOrders = orders?.filter(order => 
     order.id.toLowerCase().includes(search.toLowerCase()) ||
-    order.user_profiles.email.toLowerCase().includes(search.toLowerCase())
+    (order.users.email?.toLowerCase() || '').includes(search.toLowerCase())
   );
 
   if (isLoading) {
@@ -125,10 +125,10 @@ export function Orders() {
                     <div className="flex items-center">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {order.user_profiles.name}
+                          {order.users.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {order.user_profiles.email}
+                          {order.users.email || 'No email provided'}
                         </div>
                       </div>
                     </div>

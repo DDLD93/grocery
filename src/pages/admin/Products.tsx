@@ -19,7 +19,9 @@ import { ProductModal } from '../../components/admin/ProductModal';
 export function Products() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const queryClient = useQueryClient();
 
   const { data: products, isLoading } = useQuery({
@@ -173,35 +175,27 @@ export function Products() {
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="relative group inline-block text-left">
-                      <button className="text-gray-400 hover:text-gray-500 p-2 rounded-full hover:bg-gray-100">
-                        <MoreVertical className="h-5 w-5" />
+                    <div className="flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setIsModalOpen(true);
+                        }}
+                        className="text-gray-400 hover:text-emerald-600 p-2 rounded-full hover:bg-gray-100"
+                        title="Edit Product"
+                      >
+                        <Edit className="h-5 w-5" />
                       </button>
-                      <div className="hidden group-hover:block absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                        <div className="py-1">
-                          <button
-                            onClick={() => {
-                              setSelectedProduct(product);
-                              setIsModalOpen(true);
-                            }}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
-                          >
-                            <Edit className="mr-3 h-5 w-5 text-gray-400" />
-                            Edit Product
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this product?')) {
-                                deleteMutation.mutate(product.id);
-                              }
-                            }}
-                            className="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 w-full"
-                          >
-                            <Trash2 className="mr-3 h-5 w-5 text-red-400" />
-                            Delete Product
-                          </button>
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setProductToDelete(product);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-gray-100"
+                        title="Delete Product"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -220,6 +214,37 @@ export function Products() {
             setIsModalOpen(false);
           }}
         />
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-6">
+            <h3 className="text-lg font-medium text-gray-900">Delete Product</h3>
+            <p className="text-sm text-gray-500">
+              Are you sure you want to delete "{productToDelete?.name}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (productToDelete) {
+                    deleteMutation.mutate(productToDelete.id);
+                    setIsDeleteModalOpen(false);
+                    setProductToDelete(null);
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

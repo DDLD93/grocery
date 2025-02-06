@@ -3,19 +3,31 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  category_id: string;
+  category: string;
   image_url: string;
   stock_quantity: number;
   is_available: boolean;
+  is_organic?: boolean;
+  unit?: string;
 }
 
 export interface Category {
   id: string;
   name: string;
-  slug: string;
-  description: string | null;
-  parent_id: string | null;
+  icon?: string;
+  color?: string;
 }
+
+export const PRODUCT_CATEGORIES: Category[] = [
+  { id: 'fruits-veg', name: 'Fruits & Vegetables', color: 'green' },
+  { id: 'dairy-eggs', name: 'Dairy & Eggs', color: 'yellow' },
+  { id: 'meat-fish', name: 'Meat & Fish', color: 'red' },
+  { id: 'bakery', name: 'Bakery', color: 'orange' },
+  { id: 'beverages', name: 'Beverages', color: 'blue' },
+  { id: 'snacks', name: 'Snacks', color: 'purple' },
+  { id: 'household', name: 'Household', color: 'gray' },
+  { id: 'frozen', name: 'Frozen Foods', color: 'cyan' }
+];
 
 export interface UserProfile {
   id: string;
@@ -84,4 +96,16 @@ export interface AuthResponse {
 export interface ApiError {
   message: string;
   status?: number;
+}
+
+export interface UserInsights {
+  overallScore: number;
+  healthScore: number;
+  sustainabilityScore: number;
+  budgetScore: number;
+  categoryDistribution: {
+    category: string;
+    percentage: number;
+  }[];
+  alerts: string[];
 }

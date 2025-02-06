@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { Product } from '../../types';
+import { Product, PRODUCT_CATEGORIES } from '../../types';
 import { X, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 
 interface ProductFormData {
   name: string;
   description: string;
   price: number;
-  category_id: string;
+  category: string;
   stock_quantity: number;
   is_available: boolean;
+  is_organic: boolean;
+  unit: string;
   image_url?: string;
 }
 
@@ -28,9 +30,11 @@ export function ProductModal({ product, onClose, onSuccess }: ProductModalProps)
       name: '',
       description: '',
       price: 0,
-      category_id: '',
+      category: '',
       stock_quantity: 0,
       is_available: true,
+      is_organic: false,
+      unit: 'kg',
     },
   });
 
@@ -139,6 +143,28 @@ export function ProductModal({ product, onClose, onSuccess }: ProductModalProps)
                   </div>
                 </div>
 
+                {/* Category Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    {...register('category', { required: 'Category is required' })}
+                    className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                  >
+                    <option value="">Select a category</option>
+                    {PRODUCT_CATEGORIES.map((category) => (
+                      <option key={category.id} value={category.name}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.category && (
+                    <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
+                  )}
+                </div>
+
+
                 {/* Price and Stock */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -174,6 +200,38 @@ export function ProductModal({ product, onClose, onSuccess }: ProductModalProps)
                     {errors.stock_quantity && (
                       <p className="mt-1 text-sm text-red-600">{errors.stock_quantity.message}</p>
                     )}
+                  </div>
+                </div>
+
+                {/* Unit Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Unit
+                  </label>
+                  <select
+                    {...register('unit')}
+                    className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                  >
+                    <option value="kg">Kilogram (kg)</option>
+                    <option value="g">Gram (g)</option>
+                    <option value="l">Liter (l)</option>
+                    <option value="ml">Milliliter (ml)</option>
+                    <option value="pcs">Pieces (pcs)</option>
+                    <option value="pack">Pack</option>
+                  </select>
+                </div>
+
+                {/* Additional Options */}
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <input
+                      {...register('is_organic')}
+                      type="checkbox"
+                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                    />
+                    <label className="ml-2 block text-sm text-gray-900">
+                      Organic Product
+                    </label>
                   </div>
                 </div>
               </div>

@@ -13,6 +13,8 @@ import { ProductDetails } from './pages/ProductDetails';
 import { Cart } from './pages/Cart';
 import { Profile } from './pages/Profile';
 import { Orders } from './pages/Orders';
+import { Checkout } from './pages/Checkout';
+import { UserInsights } from './pages/UserInsights';
 
 // Auth pages
 import { Login } from './pages/auth/Login';
@@ -42,6 +44,8 @@ const router = createBrowserRouter([
       { path: 'cart', element: <Cart /> },
       { path: 'profile', element: <Profile /> },
       { path: 'orders', element: <Orders /> },
+      { path: 'checkout', element: <Checkout /> },
+      { path: 'insights', element: <UserInsights /> },
     ],
   },
   {

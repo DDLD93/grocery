@@ -28,7 +28,7 @@ export function ProductDetails() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['product', id],
-    queryFn: () => api.mockData.getProductById(id!),
+    queryFn: () => api.products.getById(id!),
   });
 
   if (isLoading) {

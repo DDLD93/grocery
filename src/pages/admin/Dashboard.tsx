@@ -1,6 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { Users, Package, ShoppingCart, TrendingUp } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+
+const COLORS = ['#059669', '#0284c7', '#7c3aed', '#dc2626'];
 
 export function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
@@ -84,6 +98,75 @@ export function AdminDashboard() {
               <p className="text-sm font-medium text-gray-600">Revenue</p>
               <p className="text-2xl font-semibold">₦{stats?.revenue.toFixed(2)}</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Revenue Chart */}
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Revenue Trend (Last 30 Days)</h2>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={stats?.revenueData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Area
+                type="monotone"
+                dataKey="amount"
+                stroke="#059669"
+                fill="#059669"
+                fillOpacity={0.2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Order Status Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">Order Status Distribution</h2>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats?.orderStatusData}
+                  dataKey="count"
+                  nameKey="status"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  label={({ status, count }) => `${status} (${count})`}
+                >
+                  {stats?.orderStatusData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Additional chart or stats can go here */}
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">Quick Stats</h2>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Average Order Value</span>
+              <span className="font-semibold">
+                ₦{((stats?.revenue || 0) / (stats?.orders || 1)).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Products per User</span>
+              <span className="font-semibold">
+                {((stats?.products || 0) / (stats?.users || 1)).toFixed(1)}
+              </span>
+            </div>
+            {/* Add more quick stats as needed */}
           </div>
         </div>
       </div>

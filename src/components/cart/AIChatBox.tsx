@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   Send, 
   Bot, 
@@ -10,8 +10,13 @@ import {
   ShoppingBag,
   PiggyBank,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  MessageSquarePlus,
+  AlertCircle
 } from 'lucide-react';
+import { useCartStore } from '../../lib/store';
+import { geminiChat } from '../../lib/gemini';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'assistant' | 'user';
@@ -58,105 +63,146 @@ const PREDEFINED_PROMPTS: Prompt[] = [
 ];
 
 export function AIChatBox() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Hello! I\'m your AI shopping assistant. How can I help you today?' }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPrompts, setShowPrompts] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { items } = useCartStore();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = async (message: string) => {
-    if (!message.trim()) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-    setMessages(prev => [...prev, { role: 'user', content: message }]);
-    setInput('');
-    setLoading(true);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-    // Simulate AI response
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `I'm processing your request: "${message}". This is a placeholder response. Integrate with your AI service for real responses.`
-      }]);
+  const handleSend = async (text: string) => {
+    if (!text.trim()) return;
+
+    try {
+      setError(null);
+      const newMessage: Message = { role: 'user', content: text };
+      setMessages(prev => [...prev, newMessage]);
+      setInput('');
+      setLoading(true);
+      setShowPrompts(false);
+
+      // Create a temporary message for streaming
+      const tempMessage: Message = { role: 'assistant', content: '' };
+      setMessages(prev => [...prev, tempMessage]);
+
+      // Get streaming response from Gemini
+      await geminiChat(
+        [...messages, newMessage],
+        {
+          cartItems: items,
+          userPreferences: [], // Add user preferences from your auth context or store
+        },
+        (chunk) => {
+          setMessages(prev => [
+            ...prev.slice(0, -1),
+            { ...tempMessage, content: chunk }
+          ]);
+        }
+      );
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      setError('Failed to get response. Please try again.');
+      // Remove the temporary message if there's an error
+      setMessages(prev => prev.slice(0, -1));
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  const startNewChat = () => {
+    setMessages([]);
+    setShowPrompts(true);
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-[600px] flex flex-col">
+    <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
       {/* Header */}
-      <div className="p-4 border-b bg-gradient-to-r from-emerald-500 to-teal-600">
+      <div className="p-4 border-b flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <div className="bg-white p-2 rounded-lg">
-            <Sparkles className="w-6 h-6 text-emerald-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-white">AI Shopping Assistant</h2>
-            <p className="text-emerald-100 text-sm">Powered by AI</p>
-          </div>
+          <Bot className="w-6 h-6 text-emerald-600" />
+          <h2 className="font-medium">Shopping Assistant</h2>
         </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`flex items-start space-x-2 ${
-              message.role === 'assistant' ? '' : 'flex-row-reverse space-x-reverse'
-            }`}
+        {messages.length > 0 && (
+          <button
+            onClick={startNewChat}
+            className="p-2 text-gray-400 hover:text-emerald-600 rounded-full hover:bg-gray-100"
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              message.role === 'assistant' 
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600' 
-                : 'bg-gray-100'
-            }`}>
-              {message.role === 'assistant' ? (
-                <Bot className="w-5 h-5 text-white" />
-              ) : (
-                <User className="w-5 h-5 text-gray-600" />
-              )}
-            </div>
-            <div className={`max-w-[80%] rounded-xl p-3 shadow-sm ${
-              message.role === 'assistant' 
-                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100' 
-                : 'bg-gray-100'
-            }`}>
-              {message.content}
-            </div>
-          </div>
-        ))}
-        {loading && (
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-3 border border-emerald-100">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce delay-100" />
-                <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce delay-200" />
-              </div>
-            </div>
-          </div>
+            <MessageSquarePlus className="w-5 h-5" />
+          </button>
         )}
       </div>
 
-      {/* Predefined Prompts */}
-      <div className="p-4 border-t bg-gray-50">
-        <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {PREDEFINED_PROMPTS.map((prompt, index) => (
-            <button
-              key={index}
-              onClick={() => handleSend(prompt.text)}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-colors ${prompt.color}`}
+      {/* Messages */}
+      <div className="h-96 overflow-y-auto p-4 space-y-4">
+        {error && (
+          <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
+            <AlertCircle className="w-5 h-5" />
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`flex ${
+              message.role === 'assistant' ? 'justify-start' : 'justify-end'
+            }`}
+          >
+            <div
+              className={`max-w-[80%] rounded-lg p-3 ${
+                message.role === 'assistant'
+                  ? 'bg-gray-100'
+                  : 'bg-emerald-600 text-white'
+              }`}
             >
-              {prompt.icon}
-              <span className="text-sm">{prompt.text}</span>
-            </button>
-          ))}
-        </div>
+              <div className="flex items-start space-x-2">
+                {message.role === 'assistant' && (
+                  <Bot className="w-5 h-5 mt-1 flex-shrink-0" />
+                )}
+                <div className="prose prose-sm max-w-none">
+                  {message.role === 'assistant' ? (
+                    <ReactMarkdown>{message.content || ''}</ReactMarkdown>
+                  ) : (
+                    <p>{message.content}</p>
+                  )}
+                </div>
+                {message.role === 'user' && (
+                  <User className="w-5 h-5 mt-1 flex-shrink-0" />
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
       </div>
+
+      {/* Predefined Prompts */}
+      {showPrompts && (
+        <div className="p-4 border-t bg-gray-50">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {PREDEFINED_PROMPTS.map((prompt, index) => (
+              <button
+                key={index}
+                onClick={() => handleSend(prompt.text)}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-colors ${prompt.color}`}
+              >
+                {prompt.icon}
+                <span className="text-sm">{prompt.text}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Input */}
       <div className="p-4 border-t bg-gray-50">

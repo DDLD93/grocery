@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { Product, Category, Review } from './../types';
 import type { LoginCredentials, RegisterData, User, AuthResponse, ApiError, Order } from '../types';
 import { faker } from '@faker-js/faker';
-
+import { v4 as uuidv4 } from 'uuid';
 let products: Product[] = [];
 export const api = {
   auth: {
@@ -54,6 +54,20 @@ export const api = {
         if (!authData.user) {
           throw new Error('No user data returned');
         }
+
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            name: data.name,
+            phone: data.phone_number,
+            address: data.address,
+          })
+          .select()
+          .single();
+
+        if (userError) throw userError;
+        
 
        
 
@@ -146,22 +160,14 @@ export const api = {
       try {
         const { data, error } = await supabase
           .from('products')
-          .select(`
-            *,
-            reviews (
-              *,
-              user_profiles (
-                full_name
-              )
-            )
-          `)
+          .select(`*`)
           .eq('id', id)
           .single();
         
         if (error) throw error;
         
         return {
-          product: data as Product & { reviews: Review[] },
+          product: data as Product,
           error: null,
         };
       } catch (error) {
@@ -252,27 +258,43 @@ export const api = {
   },
 
   orders: {
-    create: async (order: any): Promise<{ order: any; error: ApiError | null }> => {
+    create: async (orderData: any): Promise<{ error: Error | null }> => {
       try {
-        const { data, error } = await supabase
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user) throw new Error('Not authenticated');
+
+        // Create the order
+        const { data: order, error: orderError } = await supabase
           .from('orders')
-          .insert(order)
+          .insert({
+            user_id: userData.user.id,
+            total_amount: orderData.total_amount,
+            items: orderData.items,
+            status: orderData.status,
+          })
           .select()
           .single();
-        
-        if (error) throw error;
-        
-        return {
-          order: data,
-          error: null,
-        };
+
+        if (orderError) throw orderError;
+
+        // Create order items
+        const orderItems = orderData.items.map((item: any) => ({
+          order_id: order.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+
+        return { error: null };
       } catch (error) {
-        return {
-          order: null,
-          error: {
-            message: (error as Error).message,
-          },
-        };
+        console.error('Create order error:', error);
+        return { error: error as Error };
       }
     },
 
@@ -382,24 +404,96 @@ export const api = {
         };
       }
     },
+
+    getInsights: async (): Promise<UserInsights> => {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user) throw new Error('Not authenticated');
+
+        // Get user preferences
+        const { data: preferences } = await supabase
+          .from('users')
+          .select('dietary_preferences')
+          .eq('id', userData.user.id)
+          .single();
+
+        // Get user orders
+        const { data: orders } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              *,
+              products (*)
+            )
+          `)
+          .eq('user_id', userData.user.id);
+
+        // Calculate scores based on preferences and order history
+        // This is where you'd implement your scoring logic
+        const scores = calculateUserScores(preferences, orders);
+
+        return {
+          overallScore: scores.overall,
+          healthScore: scores.health,
+          sustainabilityScore: scores.sustainability,
+          budgetScore: scores.budget,
+          categoryDistribution: scores.categoryDistribution,
+          alerts: scores.alerts,
+        };
+      } catch (error) {
+        console.error('Get insights error:', error);
+        throw error;
+      }
+    },
   },
 
   admin: {
     getStats: async () => {
       try {
-        const [users, products, orders] = await Promise.all([
-          supabase.from('auths').select('id', { count: 'exact' }),
+        const [users, products, orders, revenueByDay] = await Promise.all([
+          supabase.from('users').select('id', { count: 'exact' }),
           supabase.from('products').select('id', { count: 'exact' }),
-          supabase.from('orders').select('id, total_amount'),
+          supabase.from('orders').select('id, total_amount, created_at, status'),
+          supabase.from('orders')
+            .select('created_at, total_amount')
+            .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+            .order('created_at', { ascending: true })
         ]);
 
         const totalRevenue = orders.data?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+        
+        // Process orders by status
+        const ordersByStatus = orders.data?.reduce((acc, order) => {
+          acc[order.status] = (acc[order.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Process daily revenue
+        const dailyRevenue = revenueByDay.data?.reduce((acc, order) => {
+          const date = new Date(order.created_at).toLocaleDateString();
+          acc[date] = (acc[date] || 0) + order.total_amount;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Convert to array format for charts
+        const revenueData = Object.entries(dailyRevenue || {}).map(([date, amount]) => ({
+          date,
+          amount,
+        }));
+
+        const orderStatusData = Object.entries(ordersByStatus || {}).map(([status, count]) => ({
+          status,
+          count,
+        }));
 
         return {
           users: users.count || 0,
           products: products.count || 0,
           orders: orders.data?.length || 0,
           revenue: totalRevenue,
+          revenueData,
+          orderStatusData,
           error: null,
         };
       } catch (error) {
@@ -412,7 +506,7 @@ export const api = {
     users: {
       getAll: async () => {
         try {
-          const { data, error } = await supabase.auth.admin.listUsers()
+          const { data, error } = await supabase.from('users').select('*')
           if (error) throw error;
 
           return {
@@ -509,7 +603,7 @@ export const api = {
           const { error } = await supabase
             .from('products')
             .delete()
-            .eq('id', id);
+            .match({ id: id });
 
           if (error) throw error;
 
@@ -522,19 +616,19 @@ export const api = {
       uploadImage: async (file: File) => {
         try {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${Math.random()}.${fileExt}`;
-          const filePath = `product-images/${fileName}`;
+          const fileName = `${uuidv4().replace(/-/g, '')}.${fileExt}`;
+       
 
           const { error: uploadError } = await supabase.storage
-            .from('products')
-            .upload(filePath, file);
+            .from('products-images')
+            .upload(fileName, file);
 
           if (uploadError) throw uploadError;
 
           const { data } = supabase.storage
-            .from('products')
-            .getPublicUrl(filePath);
-
+            .from('products-images')
+            .getPublicUrl(fileName);
+          console.log('data', data);
           return {
             url: data.publicUrl,
             error: null,
@@ -555,7 +649,7 @@ export const api = {
             .from('orders')
             .select(`
               *,
-              user_profiles (
+              users (
                 name,
                 email
               )

@@ -4,7 +4,8 @@ import {
   ShoppingCart, 
   Package,
   ClipboardList,
-  LogOut 
+  LogOut,
+  TrendingUp 
 } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -44,6 +45,13 @@ export function UserLayout() {
                 >
                   <ClipboardList className="w-5 h-5 inline-block mr-1" />
                   Orders
+                </Link>
+                <Link
+                  to="/insights"
+                  className="text-gray-700 hover:text-emerald-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  <TrendingUp className="w-5 h-5 inline-block mr-1" />
+                  Insights
                 </Link>
               </nav>
             </div>

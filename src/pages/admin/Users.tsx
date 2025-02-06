@@ -40,8 +40,9 @@ export function Users() {
   });
 
   const filteredUsers = users?.filter(user => 
-    user.email.toLowerCase().includes(search.toLowerCase()) ||
-    user.name?.toLowerCase().includes(search.toLowerCase())
+    (user.email?.toLowerCase().includes(search.toLowerCase()) || false) ||
+    (user.phone?.includes(search)) ||
+    (user.name?.toLowerCase().includes(search.toLowerCase()) || false)
   );
 
   if (isLoading) {
@@ -74,16 +75,13 @@ export function Users() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
+                  User Info
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
+                  Contact
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Joined
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Address
                 </th>
                 <th className="relative px-6 py-3">
                   <span className="sr-only">Actions</span>
@@ -98,7 +96,7 @@ export function Users() {
                       <div className="flex-shrink-0 h-10 w-10">
                         <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
                           <span className="text-emerald-600 font-medium">
-                            {user.name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
+                            {user.name?.[0]?.toUpperCase() || 'U'}
                           </span>
                         </div>
                       </div>
@@ -106,24 +104,17 @@ export function Users() {
                         <div className="text-sm font-medium text-gray-900">
                           {user.name || 'N/A'}
                         </div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {/* {format(new Date(user.created_at), 'MMM d, yyyy')} */}
+                    <div className="text-sm text-gray-900">{user.phone || 'N/A'}</div>
+                    <div className="text-sm text-gray-500">{user.email || 'No email'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Active
-                    </span>
+                    <div className="text-sm text-gray-500 max-w-xs truncate">
+                      {user.address || 'No address'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="relative group inline-block text-left">

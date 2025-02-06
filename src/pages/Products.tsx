@@ -16,36 +16,30 @@ const CATEGORIES = [
   'Household'
 ];
 
-const RECOMMENDATIONS = [
-  {
-    title: "Popular Right Now",
-    description: "Trending items in your area",
-    color: "from-orange-500 to-pink-500"
-  },
-  {
-    title: "Fresh Arrivals",
-    description: "New products this week",
-    color: "from-emerald-500 to-teal-500"
-  },
-  {
-    title: "Season's Best",
-    description: "Top seasonal products",
-    color: "from-blue-500 to-indigo-500"
-  }
-];
+
 
 export function Products() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['products', searchQuery],
-    queryFn: () => searchQuery ? api.products.search(searchQuery) : api.mockData.getProducts(),
+    queryKey: ['products', searchQuery, selectedCategory],
+    queryFn: async () => {
+      let products = searchQuery 
+        ? await api.products.search(searchQuery)
+        : await api.products.getAll();
+
+      if (selectedCategory !== 'All' && products.products) {
+        products.products = products.products.filter(
+          product => product.category === selectedCategory
+        );
+      }
+
+      return products;
+    },
   });
 
-  if (data?.error) {
-    return <div className="text-center py-12">Error fetching products: {data.error.message}</div>;
-  }
+
 
   return (
     <div className="space-y-8">
@@ -71,37 +65,8 @@ export function Products() {
               />
               <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
             </div>
-            <div className="relative">
-              <button className="inline-flex items-center px-4 py-3 bg-white rounded-xl shadow-lg text-gray-700 hover:bg-gray-50">
-                <Filter className="w-5 h-5 mr-2" />
-                Dietary Filters
-                <ChevronDown className="w-4 h-4 ml-2" />
-              </button>
-            </div>
           </div>
         </div>
-      </div>
-
-      {/* Recommendations Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {RECOMMENDATIONS.map((rec, index) => (
-          <div
-            key={index}
-            className={`bg-gradient-to-r ${rec.color} p-4 rounded-xl text-white cursor-pointer hover:shadow-lg transition-shadow`}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold mb-1">{rec.title}</h3>
-                <p className="text-sm text-white/80">{rec.description}</p>
-              </div>
-              <Sparkles className="w-5 h-5 text-white/80" />
-            </div>
-            <button className="mt-4 inline-flex items-center text-sm bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition-colors">
-              View All
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </button>
-          </div>
-        ))}
       </div>
 
       {/* Categories */}
@@ -132,11 +97,17 @@ export function Products() {
             </div>
           ))}
         </div>
-      ) : (
+      ) : (        
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {data?.products?.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+          {data?.products?.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              No products found for "{searchQuery}" in {selectedCategory}
+            </div>
+          ) : (
+            data?.products?.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))
+          )}
         </div>
       )}
 
