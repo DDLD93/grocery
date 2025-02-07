@@ -7,19 +7,19 @@ import {
   BarChart,
   LogOut 
 } from 'lucide-react';
+import { api } from '../lib/api';
 
 export function AdminLayout() {
-  // const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // const handleLogout = async () => {
-  //   try {
-  //     await logout();
-  //     navigate('/auth/login');
-  //   } catch (error) {
-  //     console.error('Logout failed:', error);
-  //   }
-  // };
+  const handleLogout = async () => {
+    try {
+      await api.auth.logout();
+      navigate('/auth/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -70,7 +70,7 @@ export function AdminLayout() {
             <div className="flex justify-between items-center px-4 py-4">
               <h2 className="text-xl font-semibold text-gray-800">Admin Panel</h2>
               <button
-                // onClick={handleLogout}
+                onClick={handleLogout}
                 className="flex items-center text-gray-600 hover:text-gray-800"
               >
                 <LogOut className="w-5 h-5 mr-1" />

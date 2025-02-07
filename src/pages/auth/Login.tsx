@@ -19,6 +19,10 @@ export function Login() {
     try {
       const { user, error } = await api.auth.login(data);
       if (error) throw error;
+      if (user?.email == "admin@system.com") {
+        navigate('/admin');
+        return
+      }
       navigate('/');
     } catch (err: any) {
       setError(err.message);
@@ -27,7 +31,7 @@ export function Login() {
 
   return (
     <AuthLayout 
-      title="Welcome to FreshMarket"
+      title="Welcome to SMARTGROCERY NAIJA"
       subtitle="Sign in to your account to start shopping"
     >
       <div className="mt-8">

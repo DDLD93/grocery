@@ -23,7 +23,7 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
 
       }
       setUser(user);
-      setIsAdmin(user?.role === 'admin');
+      setIsAdmin(user?.email === 'admin@system.com');
       setLoading(false);
     };
 

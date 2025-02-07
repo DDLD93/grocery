@@ -42,7 +42,7 @@ export function Register() {
 
   return (
     <AuthLayout 
-      title="Join FreshMarket"
+      title="Join SMARTGROCERY NAIJA"
       subtitle="Create an account to start shopping fresh groceries"
     >
       <div className="mt-8">

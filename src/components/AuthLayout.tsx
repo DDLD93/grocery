@@ -22,7 +22,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           <div className="mb-12">
             <Link to="/" className="flex items-center">
               <span className="text-white text-4xl font-bold tracking-tight">
-                Fresh<span className="text-emerald-300">Market</span>
+              SMARTGROCERY NAIJA <span className="text-emerald-300">Market</span>
               </span>
             </Link>
             <p className="mt-6 text-emerald-50 text-xl leading-relaxed max-w-md">
