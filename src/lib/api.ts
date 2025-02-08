@@ -3,6 +3,7 @@ import { Product, Category, Review } from './../types';
 import type { LoginCredentials, RegisterData, User, AuthResponse, ApiError, Order } from '../types';
 import { faker } from '@faker-js/faker';
 import { v4 as uuidv4 } from 'uuid';
+import { search } from './gemini';
 let products: Product[] = [];
 export const api = {
   auth: {
@@ -182,12 +183,12 @@ export const api = {
 
     search: async (query: string): Promise<{ products: Product[]; error: ApiError | null }> => {
       try {
+        const name = await search(query);
         const { data, error } = await supabase
           .from('products')
           .select('*')
-          .textSearch('search_vector', query)
+          .textSearch('name', name)
           .eq('is_available', true);
-        
         if (error) throw error;
         
         return {

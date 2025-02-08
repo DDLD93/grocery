@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Search, Filter, ChevronDown, Apple, Leaf, Sparkles, ChevronRight } from 'lucide-react';
+import { Search, Apple, Leaf } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { ProductCard } from '../components/ProductCard';
@@ -7,6 +7,7 @@ import { CartPreview } from '../components/CartPreview';
 
 const CATEGORIES = [
   'All',
+  'Recommended',
   'Fruits & Vegetables',
   'Dairy & Eggs',
   'Meat & Fish',
@@ -16,15 +17,20 @@ const CATEGORIES = [
   'Household'
 ];
 
-
-
 export function Products() {
+  const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const { data, isLoading } = useQuery({
     queryKey: ['products', searchQuery, selectedCategory],
     queryFn: async () => {
+      if (selectedCategory === 'Recommended') {
+        const userId = await api.auth.getCurrentUser(); // Replace with real user ID
+        const recommendations = await api.products.getRecommendations(userId.user?.id || '');
+        return { products: recommendations.recommendations };
+      }
+
       let products = searchQuery 
         ? await api.products.search(searchQuery)
         : await api.products.getAll();
@@ -39,7 +45,9 @@ export function Products() {
     },
   });
 
-
+  const handleSearch = () => {
+    setSearchQuery(inputText);
+  };
 
   return (
     <div className="space-y-8">
@@ -59,12 +67,18 @@ export function Products() {
               <input
                 type="text"
                 placeholder="Search for fruits, vegetables, etc..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-green-500 shadow-lg"
               />
               <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
             </div>
+            <button
+              onClick={handleSearch}
+              className="bg-green-600 text-white px-6 py-3 rounded-xl shadow-md transition hover:bg-green-500"
+            >
+              Search
+            </button>
           </div>
         </div>
       </div>
